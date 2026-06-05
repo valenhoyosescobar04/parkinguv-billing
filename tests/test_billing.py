@@ -54,3 +54,20 @@ class TestClienteVIP:
     def test_no_vip_paga_precio_normal(self):
         assert calcular_tarifa(90) == 1_000
 
+
+class TestValoresLimite:
+
+    @pytest.mark.parametrize("minutos,vip,esperado", [
+        (0, False, 0),  # mínimo absoluto
+        (29, False, 0),  # un minuto antes del límite gratis
+        (30, False, 0),  # exactamente el límite gratis
+        (31, False, 500),  # primer minuto cobrable
+        (90, False, 1_000),  # exactamente 2 horas cobrables
+        (91, False, 1_500),  # entra en tercera hora
+        (1440, False, 12_000),  # exactamente 24h = tope
+        (1441, False, 12_000),  # supera el tope
+        (90, True, 800),  # VIP descuento 20%
+        (1440, True, 9_600),  # VIP con tope aplicado
+    ])
+    def test_tabla_equivalencia(self, minutos, vip, esperado):
+        assert calcular_tarifa(minutos, vip) == esperado
