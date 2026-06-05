@@ -1,0 +1,66 @@
+name: CI Pipeline - ParkingUV
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Pruebas unitarias
+        run: pytest tests/test_billing.py -v
+
+      - name: Pruebas BDD
+        run: pytest tests/test_bdd.py -v
+
+      - name: Seguridad básica con Bandit
+        run: bandit -r src/ -ll
+
+  performance:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    needs: tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Iniciar servidor
+        run: |
+          python src/api.py &
+          sleep 3
+
+      - name: Pruebas de rendimiento (Locust headless)
+        run: |
+          locust -f locustfile.py \
+            --headless \
+            --host http://localhost:8000 \
+            --users 50 \
+            --spawn-rate 10 \
+            --run-time 30s \
+            --csv=locust_report
+
+      - name: Subir reporte Locust
+        uses: actions/upload-artifact@v4
+        with:
+          name: locust-report
+          path: locust_report*.csv
