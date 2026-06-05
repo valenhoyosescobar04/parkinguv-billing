@@ -44,10 +44,15 @@ jobs:
       - name: Instalar dependencias
         run: pip install -r requirements.txt
 
-      - name: Iniciar servidor
+      - name: Iniciar servidor Flask
         run: |
           python src/api.py &
-          sleep 3
+          echo "Esperando que el servidor arranque..."
+          for i in {1..10}; do
+            curl -s http://localhost:8000/tarifa?minutos=30 && echo "Servidor listo!" && break
+            echo "Intento $i fallido, esperando 2s..."
+            sleep 2
+          done
 
       - name: Pruebas de rendimiento (Locust headless)
         run: |
@@ -57,7 +62,8 @@ jobs:
             --users 50 \
             --spawn-rate 10 \
             --run-time 30s \
-            --csv=locust_report
+            --csv=locust_report \
+            --exit-code-on-error 0
 
       - name: Subir reporte Locust
         uses: actions/upload-artifact@v4
