@@ -7,7 +7,7 @@ TOPE_DIARIO = 12_000
 
 
 def calcular_tarifa(minutos: int, vip: bool = False) -> int:
- 
+
     if minutos <= MINUTOS_GRATIS:
         return 0
 
@@ -21,3 +21,14 @@ def calcular_tarifa(minutos: int, vip: bool = False) -> int:
     total = min(total, TOPE_DIARIO)
 
     return int(total)
+
+def calcular_tarifa_con_detalle(minutos: int, vip: bool = False) -> dict:
+    """Retorna un desglose completo del cobro."""
+    tarifa = calcular_tarifa(minutos, vip)
+    return {
+        "minutos": minutos,
+        "vip": vip,
+        "tarifa": tarifa,
+        "gratuito": minutos <= MINUTOS_GRATIS,
+        "tope_aplicado": tarifa == TOPE_DIARIO,
+    }
